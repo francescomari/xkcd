@@ -119,7 +119,7 @@ func showComic(comic *comic) error {
 		return fmt.Errorf("read image: %v", err)
 	}
 
-	fmt.Printf("%s\n\n", comic.Title)
+	fmt.Printf("#%d %s\n\n", comic.Num, comic.Title)
 
 	if _, err := iterm2.InlineImage(image, iterm2.WithInline(true)); err != nil {
 		return fmt.Errorf("inline image: %v", err)
