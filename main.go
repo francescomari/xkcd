@@ -63,19 +63,29 @@ func showRandomComic() error {
 		return fmt.Errorf("read current comic: %v", err)
 	}
 
-	randomComic, err := readComicByNumber(1 + rand.Intn(currentComic.Num))
-	if err != nil {
-		return fmt.Errorf("read comic by number: %v", err)
-	}
-	if randomComic == nil {
-		return fmt.Errorf("random comic not found")
-	}
+	var attempts int
 
-	if err := showComic(randomComic); err != nil {
-		return fmt.Errorf("show comic: %v", err)
-	}
+	for {
+		attempts++
 
-	return nil
+		if attempts > 3 {
+			return fmt.Errorf("cannot find a random comic")
+		}
+
+		randomComic, err := readComicByNumber(1 + rand.Intn(currentComic.Num))
+		if err != nil {
+			return fmt.Errorf("read comic by number: %v", err)
+		}
+		if randomComic == nil {
+			continue
+		}
+
+		if err := showComic(randomComic); err != nil {
+			return fmt.Errorf("show comic: %v", err)
+		}
+
+		return nil
+	}
 }
 
 func showComicByNumber(numArg string) error {
