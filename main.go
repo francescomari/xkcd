@@ -2,16 +2,21 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/francescomari/iterm2"
 	"github.com/mitchellh/go-wordwrap"
 )
 
 func main() {
+	rand.Seed(time.Now().Unix())
+
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v", err)
 		os.Exit(1)
@@ -19,11 +24,50 @@ func main() {
 }
 
 func run() error {
+	var random bool
+
+	flag.BoolVar(&random, "random", false, "Show a random comic")
+	flag.Parse()
+
+	if random {
+		return showRandomComic()
+	}
+
+	return showLatestComic()
+}
+
+func showLatestComic() error {
 	comic, err := readCurrentComic()
 	if err != nil {
 		return fmt.Errorf("read current comic: %v", err)
 	}
 
+	if err := showComic(comic); err != nil {
+		return fmt.Errorf("show comic: %v", err)
+	}
+
+	return nil
+}
+
+func showRandomComic() error {
+	currentComic, err := readCurrentComic()
+	if err != nil {
+		return fmt.Errorf("read current comic: %v", err)
+	}
+
+	randomComic, err := readComicByNumber(1 + rand.Intn(currentComic.Num))
+	if err != nil {
+		return fmt.Errorf("read comic by number: %v", err)
+	}
+
+	if err := showComic(randomComic); err != nil {
+		return fmt.Errorf("show comic: %v", err)
+	}
+
+	return nil
+}
+
+func showComic(comic *comic) error {
 	image, err := readBytes(comic.Image)
 	if err != nil {
 		return fmt.Errorf("read image: %v", err)
@@ -44,10 +88,19 @@ type comic struct {
 	Title string `json:"title"`
 	Image string `json:"img"`
 	Alt   string `json:"alt"`
+	Num   int    `json:"num"`
 }
 
 func readCurrentComic() (*comic, error) {
-	res, err := http.Get("https://xkcd.com/info.0.json")
+	return readComicByURL("https://xkcd.com/info.0.json")
+}
+
+func readComicByNumber(num int) (*comic, error) {
+	return readComicByURL(fmt.Sprintf("https://xkcd.com/%d/info.0.json", num))
+}
+
+func readComicByURL(url string) (*comic, error) {
+	res, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("perform request: %v", err)
 	}
