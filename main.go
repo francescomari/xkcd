@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/francescomari/iterm2"
@@ -18,7 +19,7 @@ func main() {
 	rand.Seed(time.Now().Unix())
 
 	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v", err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -33,7 +34,14 @@ func run() error {
 		return showRandomComic()
 	}
 
-	return showLatestComic()
+	switch flag.NArg() {
+	case 0:
+		return showLatestComic()
+	case 1:
+		return showComicByNumber(flag.Arg(0))
+	default:
+		return fmt.Errorf("too many arguments")
+	}
 }
 
 func showLatestComic() error {
@@ -59,8 +67,36 @@ func showRandomComic() error {
 	if err != nil {
 		return fmt.Errorf("read comic by number: %v", err)
 	}
+	if randomComic == nil {
+		return fmt.Errorf("random comic not found")
+	}
 
 	if err := showComic(randomComic); err != nil {
+		return fmt.Errorf("show comic: %v", err)
+	}
+
+	return nil
+}
+
+func showComicByNumber(numArg string) error {
+	num, err := strconv.Atoi(numArg)
+	if err != nil {
+		return fmt.Errorf("not a comic number: %v", err)
+	}
+
+	if num < 1 {
+		return fmt.Errorf("not a comic number: %v", numArg)
+	}
+
+	comic, err := readComicByNumber(num)
+	if err != nil {
+		return fmt.Errorf("read comic by number: %v", err)
+	}
+	if comic == nil {
+		return fmt.Errorf("comic not found")
+	}
+
+	if err := showComic(comic); err != nil {
 		return fmt.Errorf("show comic: %v", err)
 	}
 
@@ -92,7 +128,12 @@ type comic struct {
 }
 
 func readCurrentComic() (*comic, error) {
-	return readComicByURL("https://xkcd.com/info.0.json")
+	comic, err := readComicByURL("https://xkcd.com/info.0.json")
+	if err != nil {
+		return nil, fmt.Errorf("current comic not found")
+	}
+
+	return comic, err
 }
 
 func readComicByNumber(num int) (*comic, error) {
@@ -106,6 +147,10 @@ func readComicByURL(url string) (*comic, error) {
 	}
 
 	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("invalid response status code: %d", res.StatusCode)
