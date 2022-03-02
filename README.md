@@ -5,13 +5,27 @@ Download and print the latest [xkcd][1] comic.
 ## Install
 
 ```
-go install github.com/francescomari/xkcd
+go install github.com/francescomari/xkcd@latest
 ```
 
 ## Run
 
+Show the latest comic:
+
 ```
 xkcd
+```
+
+Show a random comic:
+
+```
+xkcd -random
+```
+
+Show a specific comic:
+
+```
+xkcd 927
 ```
 
 ## Compatibility
