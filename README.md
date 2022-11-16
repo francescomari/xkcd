@@ -1,6 +1,6 @@
 # xkcd
 
-Download and print the latest [xkcd][1] comic.
+Download and print the latest [xkcd][1] comic. `xkcd` only works in iterm2.
 
 ## Install
 
