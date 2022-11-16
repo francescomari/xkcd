@@ -150,13 +150,17 @@ func readComicByNumber(num int) (*comic, error) {
 	return readComicByURL(fmt.Sprintf("https://xkcd.com/%d/info.0.json", num))
 }
 
-func readComicByURL(url string) (*comic, error) {
+func readComicByURL(url string) (_ *comic, e error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("perform request: %v", err)
 	}
 
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil && e == nil {
+			e = fmt.Errorf("close body: %v", err)
+		}
+	}()
 
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
@@ -175,13 +179,17 @@ func readComicByURL(url string) (*comic, error) {
 	return &c, nil
 }
 
-func readBytes(url string) ([]byte, error) {
+func readBytes(url string) (_ []byte, e error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("perform request: %v", err)
 	}
 
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil && e == nil {
+			e = fmt.Errorf("close body: %v", err)
+		}
+	}()
 
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("invalid response status code: %d", res.StatusCode)
