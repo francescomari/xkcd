@@ -178,7 +178,7 @@ func inlineImageWithKitty(image []byte) error {
 		}
 
 		fmt.Print(";")
-		fmt.Print(base64.StdEncoding.EncodeToString(ensurePNG(chunk)))
+		fmt.Print(base64.StdEncoding.EncodeToString(chunk))
 		fmt.Print("\033\\")
 	}
 
