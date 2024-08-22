@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -114,6 +116,8 @@ func showComicByNumber(numArg string) error {
 }
 
 func showComic(comic *comic) error {
+	var err error
+
 	image, err := readBytes(comic.Image)
 	if err != nil {
 		return fmt.Errorf("read image: %v", err)
@@ -121,7 +125,18 @@ func showComic(comic *comic) error {
 
 	fmt.Printf("#%d %s\n\n", comic.Num, comic.Title)
 
-	if _, err := iterm2.InlineImage(image, iterm2.WithInline(true)); err != nil {
+	if os.Getenv("TERM_PROGRAM") == "iTerm.app" {
+		_, err = iterm2.InlineImage(image, iterm2.WithInline(true))
+	} else if os.Getenv("TERM") == "xterm-kitty" {
+		cmd := exec.Command("kitty", "+kitten", "icat", "--align", "center", "--scale-up")
+		cmd.Stdin = bytes.NewReader(image)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+	} else {
+		return fmt.Errorf("Image output not supported in this terminal\n")
+	}
+	if err != nil {
 		return fmt.Errorf("inline image: %v", err)
 	}
 
