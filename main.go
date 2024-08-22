@@ -125,24 +125,39 @@ func showComic(comic *comic) error {
 
 	fmt.Printf("#%d %s\n\n", comic.Num, comic.Title)
 
-	if os.Getenv("TERM_PROGRAM") == "iTerm.app" {
-		_, err = iterm2.InlineImage(image, iterm2.WithInline(true))
-	} else if os.Getenv("TERM") == "xterm-kitty" {
-		cmd := exec.Command("kitty", "+kitten", "icat", "--align", "center", "--scale-up")
-		cmd.Stdin = bytes.NewReader(image)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-	} else {
-		return fmt.Errorf("Image output not supported in this terminal\n")
-	}
-	if err != nil {
+	if err := inlineImage(image); err != nil {
 		return fmt.Errorf("inline image: %v", err)
 	}
 
 	fmt.Printf("\n\n%s\n", wordwrap.WrapString(comic.Alt, 70))
 
 	return nil
+}
+
+func inlineImage(image []byte) error {
+	switch {
+	case os.Getenv("TERM") == "xterm-kitty":
+		return inlineImageWithKitty(image)
+	default:
+		return inlineImageWithIterm2(image)
+	}
+}
+
+func inlineImageWithIterm2(image []byte) error {
+	if _, err := iterm2.InlineImage(image, iterm2.WithInline(true)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func inlineImageWithKitty(image []byte) error {
+	cmd := exec.Command("kitty", "+kitten", "icat", "--align", "center", "--scale-up")
+
+	cmd.Stdin = bytes.NewReader(image)
+	cmd.Stdout = os.Stdout
+
+	return cmd.Run()
 }
 
 type comic struct {
