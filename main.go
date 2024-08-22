@@ -2,14 +2,16 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"math/rand"
 	"net/http"
 	"os"
-	"os/exec"
 	"strconv"
 	"time"
 
@@ -152,12 +154,50 @@ func inlineImageWithIterm2(image []byte) error {
 }
 
 func inlineImageWithKitty(image []byte) error {
-	cmd := exec.Command("kitty", "+kitten", "icat", "--align", "center", "--scale-up")
+	const chunkSize = 4096
 
-	cmd.Stdin = bytes.NewReader(image)
-	cmd.Stdout = os.Stdout
+	image = ensurePNG(image)
 
-	return cmd.Run()
+	for len(image) > 0 {
+		var chunk []byte
+
+		if len(image) > chunkSize {
+			chunk, image = image[:chunkSize], image[chunkSize:]
+		} else {
+			chunk, image = image, nil
+		}
+
+		fmt.Print("\033_G")
+		fmt.Print("a=T,")
+		fmt.Print("f=100,")
+
+		if len(image) > 0 {
+			fmt.Print("m=1")
+		} else {
+			fmt.Print("m=0")
+		}
+
+		fmt.Print(";")
+		fmt.Print(base64.StdEncoding.EncodeToString(ensurePNG(chunk)))
+		fmt.Print("\033\\")
+	}
+
+	return nil
+}
+
+func ensurePNG(image []byte) []byte {
+	decoded, err := jpeg.Decode(bytes.NewReader(image))
+	if err != nil {
+		return image
+	}
+
+	var encoded bytes.Buffer
+
+	if err := png.Encode(&encoded, decoded); err != nil {
+		return image
+	}
+
+	return encoded.Bytes()
 }
 
 type comic struct {
