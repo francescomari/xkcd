@@ -234,6 +234,12 @@ func readComicByURL(url string) (_ *comic, e error) {
 		}
 	}()
 
+	defer func() {
+		if _, err := io.Copy(io.Discard, res.Body); err != nil && e == nil {
+			e = fmt.Errorf("discard body: %v", err)
+		}
+	}()
+
 	if res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
@@ -260,6 +266,12 @@ func readBytes(url string) (_ []byte, e error) {
 	defer func() {
 		if err := res.Body.Close(); err != nil && e == nil {
 			e = fmt.Errorf("close body: %v", err)
+		}
+	}()
+
+	defer func() {
+		if _, err := io.Copy(io.Discard, res.Body); err != nil && e == nil {
+			e = fmt.Errorf("discard body: %v", err)
 		}
 	}()
 
