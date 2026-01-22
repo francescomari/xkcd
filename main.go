@@ -137,9 +137,11 @@ func showComic(comic *comic) error {
 }
 
 func inlineImage(image []byte) error {
-	switch {
-	case os.Getenv("TERM") == "xterm-kitty":
-		return inlineImageWithKitty(ensurePNG(image))
+	switch os.Getenv("TERM") {
+	case "xterm-kitty":
+		return inlineImageWithKitty(image)
+	case "xterm-ghostty":
+		return inlineImageWithKitty(image)
 	default:
 		return inlineImageWithIterm2(image)
 	}
@@ -154,6 +156,8 @@ func inlineImageWithIterm2(image []byte) error {
 }
 
 func inlineImageWithKitty(image []byte) error {
+	image = ensurePNG(image)
+
 	const chunkSize = 4096
 
 	for len(image) > 0 {
